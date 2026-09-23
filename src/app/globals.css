@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f1ea;
+  --foreground: #1f2a1d;
+}
+
+html,
+body,
+#__next {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Neue Haas Grotesk Text Pro', 'Neue Haas Grotesk Display Pro 55 Roman', Inter, var(--font-geist-sans), 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-shell {
+  background: #f4f1ea;
+}
+
+.landing-shade {
+  background: linear-gradient(180deg, rgba(245, 242, 234, 0.18), rgba(245, 242, 234, 0.04) 42%, rgba(20, 31, 23, 0.12));
+  pointer-events: none;
+}
+
+.auth-shell {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(133, 171, 139, 0.2), transparent 28%),
+    linear-gradient(135deg, #f4f1ea 0%, #e9efe5 100%);
+}
+
+.auth-panel {
+  background: #3d5638 !important;
+  box-shadow: 0 24px 70px rgba(61, 86, 56, 0.22) !important;
+}
+
+.auth-panel__glow {
+  position: absolute;
+  inset: auto -15% -25% 35%;
+  height: 65%;
+  border-radius: 999px;
+  background: rgba(133, 171, 139, 0.24);
+  filter: blur(50px);
+  transform: rotate(-14deg);
+}
+
+.auth-input {
+  border-color: rgba(61, 86, 56, 0.18) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: #1f2a1d !important;
+}
+
+.auth-input:focus {
+  border-color: #336443 !important;
+  box-shadow: 0 0 0 4px rgba(133, 171, 139, 0.24) !important;
+}
+
+.auth-submit {
+  background: #1f2a1d !important;
+  box-shadow: 0 12px 22px rgba(31, 42, 29, 0.2) !important;
+}
+
+.auth-submit:hover {
+  background: #2a3827 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-shell {
+    min-height: 100vh;
+  }
+}
