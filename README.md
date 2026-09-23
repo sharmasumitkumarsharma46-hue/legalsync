@@ -1,198 +1,141 @@
 # LegalSync
 
-A calendar synchronization layer for law firms, enabling bidirectional sync between case management systems (Clio) and personal calendars (Google Calendar, Outlook).
+LegalSync is a legal operations platform built to keep firm deadlines, calendars, and case activity aligned across Clio, Google Calendar, and Outlook.
 
 ## Overview
 
-LegalSync helps law firms prevent missed deadlines and malpractice risks by automatically synchronizing calendar events across their existing systems. The platform provides:
+The product helps law firms reduce missed deadlines, improve internal coordination, and keep every calendar in sync without forcing teams to work across disconnected tools.
 
-- **Bidirectional Sync**: Automatic two-way sync between Clio and personal calendars
-- **Conflict Resolution**: Automatic detection and resolution of conflicting event modifications
-- **Real-time Updates**: Webhook support for immediate sync triggers
-- **Enterprise Security**: SOC 2 ready, HIPAA compliant
-- **Easy Setup**: <10 minute onboarding with guided wizard
+Core capabilities include:
+- user onboarding and account setup
+- secure authentication and password reset flow
+- trial-based subscription flow and pricing selection
+- campaign-style marketing landing page
+- calendar-sync architecture for Clio, Google Calendar, and Outlook
+- audit logging and subscription status handling
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
-- **Backend**: Node.js, Next.js API Routes
-- **Database**: PostgreSQL
-- **Authentication**: JWT, OAuth (Google, Microsoft)
-- **Integrations**: Clio API, Google Calendar API, Microsoft Graph API
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- PostgreSQL
+- JWT authentication
+- Nodemailer for email
+- Google Calendar API / Microsoft Graph / Clio integration hooks
 
-## Prerequisites
+## Features
 
-- Node.js 18+ 
-- PostgreSQL 14+
-- npm, yarn, or pnpm
+### Product experience
+- landing page with SaaS-style pricing section
+- signup, login, password reset, and email verification flow
+- onboarding wizard for first-time user setup
+- dashboard with subscription/trial visibility
 
-## Setup Instructions
+### Sync platform
+- Clio-to-calendar sync engine
+- Google Calendar client and Outlook client
+- event mapping and sync history logic
+- retry and conflict handling scaffolding
 
-### 1. Clone the Repository
+### Billing and auth
+- trial status endpoints
+- subscription conversion logic
+- secure password hashing and token generation
 
-```bash
-git clone <repository-url>
-cd legalsync
-```
+## Local setup
 
-### 2. Install Dependencies
+### Prerequisites
+- Node.js 18+
+- PostgreSQL
+- npm
+
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
-
-Copy the environment variables template:
+### 2. Configure environment variables
 
 ```bash
-cp env.example.txt .env.local
+copy env.example.txt .env.local
 ```
 
-Edit `.env.local` and fill in the following variables:
+Then update the values in `.env.local` with your database, JWT secret, SMTP, and OAuth credentials.
 
-```env
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=legalsync
-DB_USER=postgres
-DB_PASSWORD=your_password_here
-
-# JWT Secret
-JWT_SECRET=your_jwt_secret_here_change_in_production
-
-# Clio OAuth
-CLIO_CLIENT_ID=your_clio_client_id
-CLIO_CLIENT_SECRET=your_clio_client_secret
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# Microsoft OAuth
-MICROSOFT_CLIENT_ID=your_microsoft_client_id
-MICROSOFT_CLIENT_SECRET=your_microsoft_client_secret
-
-# Stripe (for billing)
-STRIPE_SECRET_KEY=your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-```
-
-### 4. Set Up Database
-
-Create a PostgreSQL database:
-
-```bash
-createdb legalsync
-```
-
-Run the database schema:
-
-```bash
-psql legalsync < src/lib/db/schema.sql
-```
-
-### 5. Run Development Server
+### 3. Run the app
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open http://localhost:3000
 
-## Project Structure
+## Scripts
 
+```bash
+npm run dev
+npm run build
+npm run start
+npm test
+npm run test:e2e
 ```
+
+## Project structure
+
+```text
 legalsync/
 ├── src/
-│   ├── app/              # Next.js app directory
-│   │   ├── api/          # API routes
-│   │   ├── dashboard/    # Dashboard page
-│   │   ├── onboarding/   # Onboarding wizard
-│   │   └── page.tsx      # Landing page
+│   ├── app/
+│   │   ├── api/
+│   │   ├── dashboard/
+│   │   ├── forgot-password/
+│   │   ├── login/
+│   │   ├── onboarding/
+│   │   ├── reset-password/
+│   │   ├── signup/
+│   │   └── page.tsx
+│   ├── components/
 │   ├── lib/
-│   │   ├── auth/         # Authentication utilities
-│   │   ├── db/           # Database connection and schema
-│   │   ├── integrations/ # Third-party API clients
-│   │   └── sync/         # Sync engine and conflict resolution
-│   └── components/       # React components
-├── public/               # Static assets
-└── package.json
+│   │   ├── auth/
+│   │   ├── billing/
+│   │   ├── db/
+│   │   ├── integrations/
+│   │   └── sync/
+│   └── types/
+├── e2e/
+├── public/
+├── env.example.txt
+├── package.json
+├── next.config.ts
+├── jest.config.js
+├── playwright.config.ts
+├── README.md
+└── tsconfig.json
 ```
 
-## API Endpoints
+## Environment file
 
-### Authentication
-- `POST /api/auth/signup` - Create new account
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/verify` - Verify email address
+The project includes an example environment template in [env.example.txt](env.example.txt). Fill in real values before running the app in a real environment.
 
-### Integrations
-- `POST /api/integrations/clio/connect` - Connect Clio account
-- `POST /api/integrations/google/connect` - Connect Google Calendar
-- `POST /api/integrations/outlook/connect` - Connect Outlook
-
-### Sync
-- `POST /api/sync/trigger` - Trigger manual sync
-- `GET /api/sync/history` - Get sync history
-
-### Billing
-- `POST /api/billing/subscribe` - Subscribe to a plan
-- `POST /api/billing/cancel` - Cancel subscription
-
-## Development
-
-### Running Tests
+## Testing
 
 ```bash
-npm test
+node .\node_modules\jest\bin\jest.js --runInBand
 ```
 
-### Building for Production
+## Production check
 
 ```bash
-npm run build
+node .\node_modules\next\dist\bin\next build
 ```
 
-### Starting Production Server
+## Notes
 
-```bash
-npm start
-```
-
-## OAuth Setup
-
-### Clio OAuth
-1. Go to [Clio Developer Portal](https://app.goclio.com/oauth2/applications)
-2. Create a new OAuth application
-3. Set redirect URI to `http://localhost:3000/api/integrations/clio/callback`
-4. Copy client ID and secret to `.env.local`
-
-### Google OAuth
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new OAuth 2.0 client ID
-3. Add redirect URI: `http://localhost:3000/api/integrations/google/callback`
-4. Copy client ID and secret to `.env.local`
-
-### Microsoft OAuth
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Register a new application
-3. Add redirect URI: `http://localhost:3000/api/integrations/microsoft/callback`
-4. Copy client ID and secret to `.env.local`
-
-## Security
-
-- All sensitive data encrypted at rest (AES-256)
-- All data encrypted in transit (TLS 1.3)
-- OAuth tokens encrypted in database
-- Rate limiting implemented
-- Audit logging for all significant actions
+This repository is set up as a working product prototype and engineering foundation. Some external services such as Google OAuth, Microsoft OAuth, Clio, SMTP, and billing require real credentials to be enabled in production.
 
 ## License
 
-Proprietary - All rights reserved
-
-## Support
-
-For support, email support@legalsync.com
+This project is currently intended for internal prototype and product development use.
