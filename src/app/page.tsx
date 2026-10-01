@@ -67,32 +67,52 @@ export default function Home() {
     },
   ];
 
-  const scrollPricing = (direction: 'left' | 'right') => {
-    if (!pricingRef.current) return;
+  /** True while the plan row is a horizontal scroller rather than a visible grid. */
+  const isCarousel = () => {
+    const el = pricingRef.current;
+    return Boolean(el && el.scrollWidth > el.clientWidth + 1);
+  };
 
-    const card = pricingRef.current.querySelector('article');
+  /** Move to a plan by index: horizontally on mobile, into view on desktop. */
+  const scrollToPlan = (index: number) => {
+    const el = pricingRef.current;
+    if (!el) return;
+
+    const bounded = Math.min(Math.max(index, 0), pricingPlans.length - 1);
+    setActivePlanIndex(bounded);
+
+    const cards = el.querySelectorAll('article');
+    const card = cards[bounded] as HTMLElement | undefined;
     if (!card) return;
 
-    const gap = 16;
-    const offset = card.getBoundingClientRect().width + gap;
-    const nextIndex = Math.min(Math.max(activePlanIndex + (direction === 'left' ? -1 : 1), 0), pricingPlans.length - 1);
+    if (isCarousel()) {
+      const gap = 16;
+      el.scrollTo({
+        left: (card.getBoundingClientRect().width + gap) * bounded,
+        behavior: 'smooth',
+      });
+      return;
+    }
 
-    setActivePlanIndex(nextIndex);
-    pricingRef.current.scrollTo({
-      left: offset * nextIndex,
-      behavior: 'smooth',
-    });
+    // Every plan is already on screen, so bring the chosen card into view.
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  const scrollPricing = (direction: 'left' | 'right') => {
+    scrollToPlan(activePlanIndex + (direction === 'left' ? -1 : 1));
   };
 
   const handlePricingScroll = () => {
-    if (!pricingRef.current) return;
+    const el = pricingRef.current;
+    if (!el || !isCarousel()) return;
 
-    const card = pricingRef.current.querySelector('article');
+    const card = el.querySelector('article');
     if (!card) return;
 
-    const gap = 16;
-    const currentIndex = Math.round(pricingRef.current.scrollLeft / (card.getBoundingClientRect().width + gap));
-    setActivePlanIndex(Math.min(Math.max(currentIndex, 0), pricingPlans.length - 1));
+    const step = card.getBoundingClientRect().width + 16;
+    setActivePlanIndex(
+      Math.min(Math.max(Math.round(el.scrollLeft / step), 0), pricingPlans.length - 1)
+    );
   };
 
   useEffect(() => {
@@ -321,26 +341,36 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
-            {pricingPlans.map((plan, index) => (
-              <button
-                key={plan.key}
-                type="button"
-                aria-label={`Scroll to ${plan.name} plan`}
-                onClick={() => {
-                  if (!pricingRef.current) return;
-                  const card = pricingRef.current.querySelector('article');
-                  if (!card) return;
-                  const gap = 16;
-                  setActivePlanIndex(index);
-                  pricingRef.current.scrollTo({
-                    left: (card.getBoundingClientRect().width + gap) * index,
-                    behavior: 'smooth',
-                  });
-                }}
-                className={`h-2.5 rounded-full transition-all duration-200 ${activePlanIndex === index ? 'w-7 bg-[#336443]' : 'w-2.5 bg-[#819a84]'}`}
-              />
-            ))}
+          <div
+            className="mt-6 flex flex-wrap items-center justify-center gap-2"
+            role="tablist"
+            aria-label="Choose a plan"
+          >
+            {pricingPlans.map((plan, index) => {
+              const isActive = activePlanIndex === index;
+
+              return (
+                <button
+                  key={plan.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => scrollToPlan(index)}
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'border-[#336443] bg-[#336443] text-white shadow-[0_8px_18px_rgba(51,100,67,0.24)]'
+                      : 'border-[#1f2a1d]/20 bg-white/80 text-[#1f2a1d] hover:border-[#336443]/50 hover:bg-white'
+                  }`}
+                >
+                  {plan.name}
+                  <span
+                    className={`ml-2 text-xs font-medium ${isActive ? 'text-white/80' : 'text-[#687464]'}`}
+                  >
+                    {plan.price}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <p className="mt-6 text-xs text-[#4b5b47]">Payments are handled securely by card or cryptocurrency. Cancel before the trial ends to avoid a charge.</p>
