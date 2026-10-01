@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { PLAN_DEFINITIONS } from '@/lib/billing/plans';
 
 export default function Signup() {
+  const searchParams = useSearchParams();
+  const [selectedPlan, setSelectedPlan] = useState<'solo' | 'small_firm' | 'mid_firm' | 'enterprise'>('solo');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -12,6 +16,13 @@ export default function Signup() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const planFromUrl = searchParams.get('plan');
+    if (planFromUrl && planFromUrl in PLAN_DEFINITIONS) {
+      setSelectedPlan(planFromUrl as keyof typeof PLAN_DEFINITIONS);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +35,10 @@ export default function Signup() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          plan: selectedPlan,
+        }),
       });
 
       const data = await response.json();
@@ -36,6 +50,7 @@ export default function Signup() {
       // Store session immediately so onboarding can continue without interruption
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('selectedPlan', data.plan || selectedPlan);
       window.location.href = '/onboarding';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
@@ -73,6 +88,29 @@ export default function Signup() {
             </Link>
           </p>
           </div>
+
+          <div className="mb-6 rounded-2xl border border-[#d8e1ec] bg-[#f8fafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#687992]">Selected plan</p>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-lg font-black text-[#10233f]">{PLAN_DEFINITIONS[selectedPlan].name}</p>
+                <p className="text-sm text-[#687992]">${PLAN_DEFINITIONS[selectedPlan].price}/month</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(PLAN_DEFINITIONS).map(([planKey, plan]) => (
+                  <button
+                    key={planKey}
+                    type="button"
+                    onClick={() => setSelectedPlan(planKey as keyof typeof PLAN_DEFINITIONS)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedPlan === planKey ? 'bg-[#10233f] text-white' : 'bg-white text-[#10233f] ring-1 ring-[#d8e1ec] hover:bg-[#eef4ff]'}`}
+                  >
+                    {plan.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db/pool';
 import { hashPassword, generateEmailVerificationToken, generateToken } from '@/lib/auth/utils';
+import { PLAN_DEFINITIONS } from '@/lib/billing/plans';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, firmName } = await request.json();
+    const { email, password, name, firmName, plan } = await request.json();
 
     // Validate input
     if (!email || !password || !name) {
@@ -17,6 +18,16 @@ export async function POST(request: NextRequest) {
     if (password.length < 8) {
       return NextResponse.json(
         { error: 'Password must be at least 8 characters' },
+        { status: 400 }
+      );
+    }
+
+    const selectedPlan = typeof plan === 'string' ? plan : 'solo';
+    const validPlans = Object.keys(PLAN_DEFINITIONS);
+
+    if (!validPlans.includes(selectedPlan)) {
+      return NextResponse.json(
+        { error: 'Invalid plan selected' },
         { status: 400 }
       );
     }
@@ -62,8 +73,8 @@ export async function POST(request: NextRequest) {
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
     await pool.query(
       `INSERT INTO subscriptions (user_id, plan, status, trial_ends_at, current_period_start, current_period_end)
-       VALUES ($1, 'solo', 'trial', $2, NOW(), $2)`,
-      [user.id, trialEndsAt]
+       VALUES ($1, $2, 'trial', $3, NOW(), $3)`,
+      [user.id, selectedPlan, trialEndsAt]
     );
 
     // TODO: Send verification email
@@ -75,6 +86,7 @@ export async function POST(request: NextRequest) {
       {
         token,
         message: 'Account created successfully. Please check your email to verify your account.',
+        plan: selectedPlan,
         user: {
           id: user.id,
           email: user.email,

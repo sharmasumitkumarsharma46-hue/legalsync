@@ -16,17 +16,83 @@ const navLinks = [
   { href: '#service', label: 'Service' },
 ];
 
+const legalLinks = [
+  { href: '/privacy-policy', label: 'Privacy Policy' },
+  { href: '/cookie-policy', label: 'Cookie Policy' },
+  { href: '/refund-policy', label: 'Refund Policy' },
+  { href: '/data-collection', label: 'What Data We Collect' },
+  { href: '/third-party-embeds', label: 'Third-Party Embeds' },
+];
+
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activePlanIndex, setActivePlanIndex] = useState(0);
   const pricingRef = useRef<HTMLDivElement | null>(null);
+  const allPaidPlanFeatures = [
+    'Clio sync',
+    'Google Calendar & Outlook sync',
+    'Deadline reminders',
+    'Shared team dashboard',
+    'Collaborative calendar sync',
+    'Priority support',
+    'Role-based access controls',
+    'Advanced admin controls',
+    'High-volume sync support',
+    'Premium support',
+  ];
+  const pricingPlans = [
+    {
+      key: 'solo',
+      name: 'Solo',
+      price: '$79',
+      detail: 'For one attorney',
+      difference: 'Includes the full LegalSync feature set for a single-user workflow.',
+      features: ['1 user included', ...allPaidPlanFeatures],
+    },
+    {
+      key: 'small_firm',
+      name: 'Small Firm',
+      price: '$199',
+      detail: 'For growing teams',
+      difference: 'Includes the full LegalSync feature set for coordinated team operations.',
+      features: ['Up to 10 users', ...allPaidPlanFeatures],
+    },
+    {
+      key: 'mid_firm',
+      name: 'Mid Firm',
+      price: '$499',
+      detail: 'For established firms',
+      difference: 'Includes the same full feature set with higher seat capacity and operational scale.',
+      features: ['Up to 50 users', ...allPaidPlanFeatures],
+    },
+  ];
 
   const scrollPricing = (direction: 'left' | 'right') => {
     if (!pricingRef.current) return;
 
-    pricingRef.current.scrollBy({
-      left: direction === 'left' ? -320 : 320,
+    const card = pricingRef.current.querySelector('article');
+    if (!card) return;
+
+    const gap = 16;
+    const offset = card.getBoundingClientRect().width + gap;
+    const nextIndex = Math.min(Math.max(activePlanIndex + (direction === 'left' ? -1 : 1), 0), pricingPlans.length - 1);
+
+    setActivePlanIndex(nextIndex);
+    pricingRef.current.scrollTo({
+      left: offset * nextIndex,
       behavior: 'smooth',
     });
+  };
+
+  const handlePricingScroll = () => {
+    if (!pricingRef.current) return;
+
+    const card = pricingRef.current.querySelector('article');
+    if (!card) return;
+
+    const gap = 16;
+    const currentIndex = Math.round(pricingRef.current.scrollLeft / (card.getBoundingClientRect().width + gap));
+    setActivePlanIndex(Math.min(Math.max(currentIndex, 0), pricingPlans.length - 1));
   };
 
   useEffect(() => {
@@ -68,6 +134,19 @@ export default function Home() {
               {link.label}
             </a>
           ))}
+          <details className="group relative ml-1">
+            <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium text-[#4b5b47] transition-colors hover:text-[#1f2a1d]">Legal</summary>
+            <div className="absolute right-0 top-full z-40 mt-2 min-w-56 rounded-2xl border border-white/70 bg-white/95 p-2 shadow-xl backdrop-blur-md">
+              {legalLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="block rounded-xl px-3 py-2 text-sm text-[#4b5b47] transition-colors hover:bg-[#e4ecdf] hover:text-[#1f2a1d]">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </details>
+          <Link href="/help-centre" className="px-3 py-2 text-sm font-medium text-[#4b5b47] transition-colors hover:text-[#1f2a1d]">
+            Help Centre
+          </Link>
           <Link href="/signup" className="ml-2 rounded-full bg-[#1f2a1d] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2a3827]">
             Try it Live
           </Link>
@@ -123,6 +202,19 @@ export default function Home() {
               </a>
             ))}
           </div>
+          <div className={`mt-7 border-t border-[#1f2a1d]/10 pt-5 transition-all duration-500 ${menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}`} style={{ transitionDelay: menuOpen ? '500ms' : '0ms' }}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#336443]">Legal</p>
+            <div className="grid gap-1">
+              {legalLinks.map((link) => (
+                <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="py-2 text-base font-medium text-[#4b5b47] transition-colors hover:text-[#1f2a1d]">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <Link href="/help-centre" onClick={() => setMenuOpen(false)} className={`mt-5 border-t border-[#1f2a1d]/10 pt-5 text-lg font-semibold text-[#336443] transition-all duration-500 ${menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}`} style={{ transitionDelay: menuOpen ? '700ms' : '0ms' }}>
+            Help Centre
+          </Link>
           <div className={`mt-8 flex flex-col gap-4 transition-all duration-500 ${menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}`} style={{ transitionDelay: menuOpen ? '400ms' : '0ms' }}>
             <Link href="/signup" className="flex items-center gap-2 text-sm font-medium text-[#2d3a2a] sm:hidden">
               <UserPlus className="h-4 w-4" /> Sign Me Up!
@@ -198,50 +290,50 @@ export default function Home() {
             </button>
           </div>
 
-          <div ref={pricingRef} className="mt-4 flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:none] md:mt-10 md:grid md:grid-cols-3 md:gap-5 md:items-stretch md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
-            {[
-              {
-                name: 'Solo',
-                price: '$79',
-                detail: 'For one attorney',
-                difference: 'Best for independent lawyers who want dependable Clio and calendar sync without unnecessary complexity.',
-                features: ['1 user access', 'Clio sync', 'Calendar sync', 'Deadline reminders'],
-              },
-              {
-                name: 'Small Firm',
-                price: '$199',
-                detail: 'For growing teams',
-                difference: 'Best for small teams that need shared visibility, stronger coordination, and smoother matter tracking.',
-                features: ['Multi-user access', 'Shared team dashboard', 'Collaborative calendar sync', 'Priority support'],
-              },
-              {
-                name: 'Mid Firm',
-                price: '$499',
-                detail: 'For established firms',
-                difference: 'Best for larger firms needing stronger controls, higher-volume sync, and deeper operational oversight.',
-                features: ['Advanced admin controls', 'High-volume sync support', 'Role-based access', 'Premium onboarding support'],
-              },
-            ].map((plan) => (
-              <article key={plan.name} className="flex min-w-[84%] snap-center flex-col rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-6 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-w-0 md:flex-1">
+          <div ref={pricingRef} onScroll={handlePricingScroll} className="mt-6 flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:none] md:mt-10 md:grid md:grid-cols-3 md:gap-5 md:items-stretch md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
+            {pricingPlans.map((plan) => (
+              <article key={plan.key} className="flex min-h-[660px] min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-h-[690px] md:min-w-0 md:flex-1 md:p-5">
                 <div className="md:flex-1">
                   <h3 className="text-lg font-semibold">{plan.name}</h3>
                   <p className="mt-5 text-3xl font-semibold tracking-tight">{plan.price}<span className="text-sm font-normal text-[#4b5b47]"> / month</span></p>
                   <p className="mt-2 text-sm text-[#4b5b47]">{plan.detail}, with Clio and calendar sync.</p>
-                  <p className="mt-4 text-sm leading-relaxed text-[#4b5b47]">{plan.difference}</p>
-                  <ul className="mt-5 space-y-2 text-sm text-[#4b5b47]">
+                  <p className="mt-4 min-h-[58px] text-sm leading-relaxed text-[#4b5b47]">{plan.difference}</p>
+                  <ul className="mt-5 space-y-1.5 text-[13px] leading-relaxed text-[#4b5b47] md:text-sm">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
-                        <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-[#336443]" />
+                        <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#336443]" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <Link href="/signup" className="mt-auto inline-flex w-full items-center justify-center rounded-full bg-[#2e8b57] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(46,139,87,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#267548] hover:shadow-[0_12px_24px_rgba(46,139,87,0.3)]">
+                <Link href={`/signup?plan=${plan.key}`} className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[#2e8b57] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(46,139,87,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#267548] hover:shadow-[0_12px_24px_rgba(46,139,87,0.3)]">
                   Start free trial
                 </Link>
               </article>
+            ))}
+          </div>
+
+          <div className="mt-6 flex items-center justify-center gap-2 md:hidden">
+            {pricingPlans.map((plan, index) => (
+              <button
+                key={plan.key}
+                type="button"
+                aria-label={`Scroll to ${plan.name} plan`}
+                onClick={() => {
+                  if (!pricingRef.current) return;
+                  const card = pricingRef.current.querySelector('article');
+                  if (!card) return;
+                  const gap = 16;
+                  setActivePlanIndex(index);
+                  pricingRef.current.scrollTo({
+                    left: (card.getBoundingClientRect().width + gap) * index,
+                    behavior: 'smooth',
+                  });
+                }}
+                className={`h-2.5 rounded-full transition-all duration-200 ${activePlanIndex === index ? 'w-7 bg-[#336443]' : 'w-2.5 bg-[#819a84]'}`}
+              />
             ))}
           </div>
 
@@ -423,6 +515,18 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          <nav aria-label="Legal navigation" className="flex flex-col gap-3 border-t border-[#1f2a1d]/10 pt-6 text-sm text-[#4b5b47] md:col-span-3">
+            <p className="font-semibold uppercase tracking-[0.18em] text-[#336443]">Legal</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <Link href="/privacy-policy" className="transition-colors hover:text-[#1f2a1d]">Privacy Policy</Link>
+              <Link href="/cookie-policy" className="transition-colors hover:text-[#1f2a1d]">Cookie Policy</Link>
+              <Link href="/refund-policy" className="transition-colors hover:text-[#1f2a1d]">Refund Policy</Link>
+              <Link href="/data-collection" className="transition-colors hover:text-[#1f2a1d]">What Data We Collect</Link>
+              <Link href="/third-party-embeds" className="transition-colors hover:text-[#1f2a1d]">Third-Party Embeds</Link>
+              <a href="mailto:privacy@legalsync.com" className="transition-colors hover:text-[#1f2a1d]">Contact privacy team</a>
+            </div>
+          </nav>
         </div>
       </footer>
     </main>

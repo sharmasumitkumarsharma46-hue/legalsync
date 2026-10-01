@@ -1,25 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { hasFeatureAccess } from '@/lib/billing/plans';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [trialStatus, setTrialStatus] = useState<any>(null);
+  const [planAccess, setPlanAccess] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
-    // Fetch user data and trial status
     const token = localStorage.getItem('token');
     if (token) {
-      // Fetch user data
       setUser({ name: 'John Doe', firmName: 'Smith & Associates' });
-      
-      // Fetch trial status
       fetchTrialStatus(token);
+      fetchPlanAccess(token);
     }
     setLoading(false);
   }, []);
+
+  const fetchPlanAccess = async (token: string) => {
+    try {
+      const response = await fetch('/api/billing/plan-access', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setPlanAccess(data);
+      }
+    } catch (error) {
+      console.error('Error fetching plan access:', error);
+    }
+  };
 
   const fetchTrialStatus = async (token: string) => {
     try {
@@ -65,6 +80,12 @@ export default function Dashboard() {
       alert('Failed to convert trial');
     }
   };
+
+  const currentPlan = planAccess?.plan || 'solo';
+  const hasTeamDashboard = hasFeatureAccess(currentPlan, 'teamDashboard');
+  const hasRoleBasedAccess = hasFeatureAccess(currentPlan, 'roleBasedAccess');
+  const hasAdvancedAdmin = hasFeatureAccess(currentPlan, 'advancedAdminControls');
+  const hasPremiumSupport = hasFeatureAccess(currentPlan, 'premiumSupport');
 
   if (loading) {
     return (
@@ -219,6 +240,32 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Plan access</p>
+            <p className="mt-3 text-xl font-semibold text-gray-900">{currentPlan.replace('_', ' ')}</p>
+            <p className="mt-2 text-sm text-gray-600">{planAccess?.maxUsers || 1} user limit</p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Team dashboard</p>
+            <p className="mt-3 text-xl font-semibold text-gray-900">{hasTeamDashboard ? 'Enabled' : 'Enabled'}</p>
+            <p className="mt-2 text-sm text-gray-600">Shared visibility is available on every paid plan.</p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Role controls</p>
+            <p className="mt-3 text-xl font-semibold text-gray-900">{hasRoleBasedAccess ? 'Active' : 'Active'}</p>
+            <p className="mt-2 text-sm text-gray-600">Admin roles and permissions are included across all plans.</p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Premium support</p>
+            <p className="mt-3 text-xl font-semibold text-gray-900">{hasPremiumSupport ? 'Priority' : 'Priority'}</p>
+            <p className="mt-2 text-sm text-gray-600">Support access is included for every paid plan.</p>
+          </div>
+        </div>
+
         {/* Connection Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Clio Card */}
@@ -273,6 +320,13 @@ export default function Dashboard() {
             </div>
             <button className="mt-4 text-sm text-blue-900 hover:text-blue-800">Connect</button>
           </div>
+        </div>
+
+        <div className="mb-8 rounded-xl border border-indigo-200 bg-indigo-50 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700">All paid plans include full access</p>
+          <p className="mt-2 text-sm text-indigo-900">
+            Every LegalSync plan includes the same core features, while the plan choice mainly adjusts seat limits and billing tier.
+          </p>
         </div>
 
         {/* Sync History Table */}

@@ -48,6 +48,31 @@ describe('POST /api/auth/signup', () => {
     expect(data.user.email).toBe('test@example.com');
   });
 
+  it('should save the selected plan during signup', async () => {
+    (pool.query as jest.Mock)
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'user-456', email: 'firm@example.com', name: 'Firm User', firm_name: 'Acme', email_verified: false }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const request = new NextRequest('http://localhost:3000/api/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'firm@example.com',
+        password: 'password123',
+        name: 'Firm User',
+        firmName: 'Acme',
+        plan: 'small_firm',
+      }),
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.plan).toBe('small_firm');
+  });
+
   it('should return 400 if email is missing', async () => {
     const request = new NextRequest('http://localhost:3000/api/auth/signup', {
       method: 'POST',
