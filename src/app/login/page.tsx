@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { apiFetch, type CurrentUser } from '@/lib/auth/client';
 
-export default function Login() {
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next') || '/dashboard';
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,27 +23,18 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const data = await apiFetch<{ user: CurrentUser }>('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      // Store token and redirect
-      localStorage.setItem('token', data.token);
+      // The session lives in an httpOnly cookie, so nothing is stored in
+      // localStorage. Only the display name is cached for instant paint.
       localStorage.setItem('user', JSON.stringify(data.user));
-      window.location.href = '/dashboard';
+      router.replace(nextPath.startsWith('/') ? nextPath : '/dashboard');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -137,3 +134,12 @@ export default function Login() {
     </main>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+

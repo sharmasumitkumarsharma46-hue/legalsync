@@ -1,39 +1,36 @@
 declare module 'coinbase-commerce-node' {
-  interface Charge {
+  export interface CoinbaseCharge {
     code: string;
     name: string;
     description: string;
     pricing_type: string;
-    local_price: {
-      amount: string;
-      currency: string;
-    };
+    local_price: { amount: string; currency: string };
     hosted_url: string;
     expires_at: string;
     created_at: string;
-    timeline?: Array<{
-      status: string;
-      time: string;
-    }>;
+    timeline?: Array<{ status: string; time: string }>;
   }
 
-  interface ChargeList {
-    data: Charge[];
-    pagination?: {
-      next_uri?: string;
-      previous_uri?: string;
-    };
+  export interface CoinbaseChargeClient {
+    create(params: {
+      name: string;
+      description: string;
+      pricing_type: string;
+      local_price: { amount: string; currency: string };
+      metadata?: Record<string, string>;
+    }): Promise<CoinbaseCharge>;
+    retrieve(code: string): Promise<CoinbaseCharge>;
+    list(): Promise<{ data: CoinbaseCharge[] }>;
+    cancel(code: string): Promise<CoinbaseCharge>;
   }
 
-  interface Client {
-    charge: {
-      create(data: any): Promise<Charge>;
-      retrieve(code: string): Promise<Charge>;
-      list(): Promise<ChargeList>;
-      cancel(code: string): Promise<void>;
-    };
+  export interface CoinbaseClient {
+    charge: CoinbaseChargeClient;
   }
 
-  const client: Client;
-  function init(apiKey: string): Client;
+  const Client: {
+    init(apiKey: string): CoinbaseClient;
+  };
+
+  export default Client;
 }

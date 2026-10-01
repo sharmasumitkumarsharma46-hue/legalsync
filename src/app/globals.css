@@ -15,7 +15,7 @@ body,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Neue Haas Grotesk Text Pro', 'Neue Haas Grotesk Display Pro 55 Roman', Inter, var(--font-geist-sans), 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-geist-sans), var(--font-geist-mono), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

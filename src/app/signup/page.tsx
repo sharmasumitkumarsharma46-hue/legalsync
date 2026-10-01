@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { PLAN_DEFINITIONS } from '@/lib/billing/plans';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { PLAN_DEFINITIONS, type PlanKey } from '@/lib/billing/plans';
+import { apiFetch, type CurrentUser } from '@/lib/auth/client';
 
-export default function Signup() {
+function SignupForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedPlan, setSelectedPlan] = useState<'solo' | 'small_firm' | 'mid_firm' | 'enterprise'>('solo');
+  const [chosenPlan, setChosenPlan] = useState<PlanKey | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -17,12 +19,10 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const planFromUrl = searchParams.get('plan');
-    if (planFromUrl && planFromUrl in PLAN_DEFINITIONS) {
-      setSelectedPlan(planFromUrl as keyof typeof PLAN_DEFINITIONS);
-    }
-  }, [searchParams]);
+  // A plan in the URL wins until the user picks one explicitly.
+  const planFromUrl = searchParams.get('plan');
+  const selectedPlan: PlanKey =
+    chosenPlan ?? (planFromUrl && planFromUrl in PLAN_DEFINITIONS ? (planFromUrl as PlanKey) : 'solo');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,31 +30,22 @@ export default function Signup() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/signup', {
+      const data = await apiFetch<{
+        plan: string;
+        emailVerificationRequired: boolean;
+        user: CurrentUser;
+      }>('/api/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          plan: selectedPlan,
-        }),
+        body: JSON.stringify({ ...formData, plan: selectedPlan }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
-      }
-
-      // Store session immediately so onboarding can continue without interruption
-      localStorage.setItem('token', data.token);
+      // Session is set via httpOnly cookie; only display data is cached.
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('selectedPlan', data.plan || selectedPlan);
-      window.location.href = '/onboarding';
+      router.replace('/onboarding');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -101,7 +92,7 @@ export default function Signup() {
                   <button
                     key={planKey}
                     type="button"
-                    onClick={() => setSelectedPlan(planKey as keyof typeof PLAN_DEFINITIONS)}
+                    onClick={() => setChosenPlan(planKey as PlanKey)}
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedPlan === planKey ? 'bg-[#10233f] text-white' : 'bg-white text-[#10233f] ring-1 ring-[#d8e1ec] hover:bg-[#eef4ff]'}`}
                   >
                     {plan.name}
@@ -199,5 +190,13 @@ export default function Signup() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function Signup() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

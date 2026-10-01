@@ -16,7 +16,7 @@ export interface ClioEvent {
   location?: string;
   calendar?: {
     id: string;
-    name: string;
+    name?: string;
   };
   matter?: {
     id: string;
@@ -26,6 +26,7 @@ export interface ClioEvent {
     email: string;
     name?: string;
   }>;
+  updated_at?: string;
 }
 
 export interface ClioCalendar {
@@ -40,7 +41,10 @@ export class ClioClient {
     this.accessToken = accessToken;
   }
 
-  private async request(endpoint: string, options?: RequestInit): Promise<any> {
+  private async request<T = Record<string, unknown>>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<T> {
     const response = await fetch(`${CLIO_API_BASE}${endpoint}`, {
       ...options,
       headers: {
@@ -54,12 +58,17 @@ export class ClioClient {
       throw new Error(`Clio API error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    return (await response.json()) as T;
   }
 
   async getCalendars(): Promise<ClioCalendar[]> {
-    const data = await this.request('/calendars');
+    const data = await this.request<{ data?: ClioCalendar[] }>('/calendars');
     return data.data || [];
+  }
+
+  async getEvent(eventId: string): Promise<ClioEvent> {
+    const data = await this.request<{ data: ClioEvent }>(`/calendar_entries/${eventId}`);
+    return data.data;
   }
 
   async getEvents(calendarId?: string, startDate?: Date, endDate?: Date): Promise<ClioEvent[]> {
@@ -82,12 +91,12 @@ export class ClioClient {
       url += `?${params.toString()}`;
     }
 
-    const data = await this.request(url);
+    const data = await this.request<{ data?: ClioEvent[] }>(url);
     return data.data || [];
   }
 
   async createEvent(event: Partial<ClioEvent>): Promise<ClioEvent> {
-    const data = await this.request('/calendar_entries', {
+    const data = await this.request<{ data: ClioEvent }>('/calendar_entries', {
       method: 'POST',
       body: JSON.stringify({ data: event }),
     });
@@ -95,7 +104,7 @@ export class ClioClient {
   }
 
   async updateEvent(eventId: string, event: Partial<ClioEvent>): Promise<ClioEvent> {
-    const data = await this.request(`/calendar_entries/${eventId}`, {
+    const data = await this.request<{ data: ClioEvent }>(`/calendar_entries/${eventId}`, {
       method: 'PATCH',
       body: JSON.stringify({ data: event }),
     });
@@ -103,7 +112,7 @@ export class ClioClient {
   }
 
   async deleteEvent(eventId: string): Promise<void> {
-    await this.request(`/calendar_entries/${eventId}`, {
+    await this.request<unknown>(`/calendar_entries/${eventId}`, {
       method: 'DELETE',
     });
   }

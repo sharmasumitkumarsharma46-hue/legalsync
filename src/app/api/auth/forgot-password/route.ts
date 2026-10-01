@@ -2,10 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db/pool';
 import { generatePasswordResetToken } from '@/lib/auth/utils';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { clientKey, rateLimit } from '@/lib/auth/rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
+  const throttle = rateLimit(clientKey(request, 'forgot-password'), 5, 15 * 60 * 1000);
+  if (!throttle.allowed) {
+    return NextResponse.json(
+      { error: 'Too many reset requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(throttle.retryAfterSeconds) } }
+    );
+  }
+
   try {
-    const { email } = await request.json();
+    const { email } = (await request.json()) as { email?: string };
 
     if (!email) {
       return NextResponse.json(
@@ -19,6 +29,7 @@ export async function POST(request: NextRequest) {
       [email.toLowerCase()]
     );
 
+    // Always return success so the endpoint cannot be used to discover accounts.
     if (result.rows.length === 0) {
       return NextResponse.json(
         { message: 'If an account exists for that email, a reset link has been sent.' },
@@ -26,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = result.rows[0];
+    const user = result.rows[0] as { id: string; email: string };
     const resetToken = generatePasswordResetToken();
     const resetExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -46,7 +57,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Forgot password error:', error);
+    logger.error('Forgot password failed', { error: String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

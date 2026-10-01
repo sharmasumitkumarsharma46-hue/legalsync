@@ -4,7 +4,7 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 export interface GoogleEvent {
-  id: string;
+  id?: string;
   summary: string;
   description?: string;
   start: {
@@ -21,6 +21,7 @@ export interface GoogleEvent {
     displayName?: string;
   }>;
   recurrence?: string[];
+  updated?: string;
 }
 
 export interface GoogleCalendar {
@@ -35,7 +36,10 @@ export class GoogleCalendarClient {
     this.accessToken = accessToken;
   }
 
-  private async request(endpoint: string, options?: RequestInit): Promise<any> {
+  private async request<T = Record<string, unknown>>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<T> {
     const response = await fetch(`${GOOGLE_API_BASE}${endpoint}`, {
       ...options,
       headers: {
@@ -49,12 +53,16 @@ export class GoogleCalendarClient {
       throw new Error(`Google Calendar API error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    return (await response.json()) as T;
   }
 
   async getCalendars(): Promise<GoogleCalendar[]> {
-    const data = await this.request('/users/me/calendarList');
+    const data = await this.request<{ items?: GoogleCalendar[] }>('/users/me/calendarList');
     return data.items || [];
+  }
+
+  async getEvent(calendarId: string, eventId: string): Promise<GoogleEvent> {
+    return this.request<GoogleEvent>(`/calendars/${calendarId}/events/${eventId}`);
   }
 
   async getEvents(calendarId: string = 'primary', startDate?: Date, endDate?: Date): Promise<GoogleEvent[]> {
@@ -76,12 +84,12 @@ export class GoogleCalendarClient {
       url += `?${params.toString()}`;
     }
 
-    const data = await this.request(url);
+    const data = await this.request<{ items?: GoogleEvent[] }>(url);
     return data.items || [];
   }
 
   async createEvent(calendarId: string, event: GoogleEvent): Promise<GoogleEvent> {
-    const data = await this.request(`/calendars/${calendarId}/events`, {
+    const data = await this.request<GoogleEvent>(`/calendars/${calendarId}/events`, {
       method: 'POST',
       body: JSON.stringify(event),
     });
@@ -89,7 +97,7 @@ export class GoogleCalendarClient {
   }
 
   async updateEvent(calendarId: string, eventId: string, event: GoogleEvent): Promise<GoogleEvent> {
-    const data = await this.request(`/calendars/${calendarId}/events/${eventId}`, {
+    const data = await this.request<GoogleEvent>(`/calendars/${calendarId}/events/${eventId}`, {
       method: 'PATCH',
       body: JSON.stringify(event),
     });
@@ -97,7 +105,7 @@ export class GoogleCalendarClient {
   }
 
   async deleteEvent(calendarId: string, eventId: string): Promise<void> {
-    await this.request(`/calendars/${calendarId}/events/${eventId}`, {
+    await this.request<unknown>(`/calendars/${calendarId}/events/${eventId}`, {
       method: 'DELETE',
     });
   }

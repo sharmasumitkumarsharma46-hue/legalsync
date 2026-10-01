@@ -54,3 +54,38 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 
   return { skipped: false, resetUrl };
 }
+
+export async function sendVerificationEmail(email: string, token: string) {
+  const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+  const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
+
+  const transport = getTransport();
+
+  if (!transport) {
+    console.log('Verification email not sent because SMTP is not configured.');
+    console.log('Verify URL:', verifyUrl);
+    return { skipped: true, verifyUrl };
+  }
+
+  await transport.sendMail({
+    from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+    to: email,
+    subject: 'Verify your LegalSync email',
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #10233f;">
+        <h2 style="margin-bottom: 12px;">Welcome to LegalSync</h2>
+        <p>Please confirm your email address to activate your account.</p>
+        <p>
+          <a href="${verifyUrl}" style="display: inline-block; background: #10233f; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 8px; margin-top: 8px;">
+            Verify Email
+          </a>
+        </p>
+        <p>If you did not create an account, you can ignore this email.</p>
+        <p>This link will expire in 24 hours.</p>
+      </div>
+    `,
+    text: `Verify your LegalSync email: ${verifyUrl}`,
+  });
+
+  return { skipped: false, verifyUrl };
+}

@@ -5,7 +5,8 @@ import { NextRequest } from 'next/server';
 
 // Mock the database pool
 jest.mock('@/lib/db/pool', () => ({
-  query: jest.fn(),
+  __esModule: true,
+  default: { query: jest.fn() },
 }));
 
 // Mock the auth utils
@@ -15,22 +16,30 @@ jest.mock('@/lib/auth/utils', () => ({
 }));
 
 import pool from '@/lib/db/pool';
+import { verifyPassword } from '@/lib/auth/utils';
+import { resetRateLimits } from '@/lib/auth/rate-limit';
+
+const verifyPasswordMock = verifyPassword as jest.Mock;
 
 describe('POST /api/auth/login', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetRateLimits();
+    verifyPasswordMock.mockResolvedValue(true);
   });
 
-  it('should login successfully with valid credentials', async () => {
+  it('should login successfully and set a session cookie', async () => {
     (pool.query as jest.Mock).mockResolvedValueOnce({
-      rows: [{
-        id: 'user-123',
-        email: 'test@example.com',
-        password_hash: 'hashed_password',
-        name: 'Test User',
-        firm_name: 'Test Firm',
-        email_verified: true,
-      }],
+      rows: [
+        {
+          id: 'user-123',
+          email: 'test@example.com',
+          password_hash: 'hashed_password',
+          name: 'Test User',
+          firm_name: 'Test Firm',
+          email_verified: true,
+        },
+      ],
     }).mockResolvedValueOnce({}); // Audit log
 
     const request = new NextRequest('http://localhost:3000/api/auth/login', {
@@ -45,7 +54,13 @@ describe('POST /api/auth/login', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.token).toBe('jwt_token');
+
+    // The JWT travels in an httpOnly cookie, never in the response body.
+    const cookie = response.headers.get('set-cookie') ?? '';
+    expect(cookie).toContain('ls_session=jwt_token');
+    expect(cookie).toContain('HttpOnly');
+    expect(data.token).toBeUndefined();
+
     expect(data.user.email).toBe('test@example.com');
   });
 
@@ -83,18 +98,19 @@ describe('POST /api/auth/login', () => {
   });
 
   it('should return 401 if password is incorrect', async () => {
-    const { verifyPassword } = require('@/lib/auth/utils');
-    verifyPassword.mockResolvedValueOnce(false);
+    verifyPasswordMock.mockResolvedValueOnce(false);
 
     (pool.query as jest.Mock).mockResolvedValueOnce({
-      rows: [{
-        id: 'user-123',
-        email: 'test@example.com',
-        password_hash: 'hashed_password',
-        name: 'Test User',
-        firm_name: 'Test Firm',
-        email_verified: true,
-      }],
+      rows: [
+        {
+          id: 'user-123',
+          email: 'test@example.com',
+          password_hash: 'hashed_password',
+          name: 'Test User',
+          firm_name: 'Test Firm',
+          email_verified: true,
+        },
+      ],
     });
 
     const request = new NextRequest('http://localhost:3000/api/auth/login', {
@@ -110,5 +126,33 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(401);
     expect(data.error).toContain('Invalid');
+  });
+
+  it('should throttle repeated failures for the same account', async () => {
+    verifyPasswordMock.mockResolvedValue(false);
+
+    for (let attempt = 0; attempt < 9; attempt += 1) {
+      (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+
+      const request = new NextRequest('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'x-forwarded-for': '203.0.113.77' },
+        body: JSON.stringify({ email: 'brute@example.com', password: 'password123' }),
+      });
+
+      await POST(request);
+    }
+
+    const request = new NextRequest('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '203.0.113.77' },
+      body: JSON.stringify({ email: 'brute@example.com', password: 'password123' }),
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(data.error).toContain('Too many');
   });
 });

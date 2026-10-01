@@ -4,7 +4,7 @@ const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0
 const MICROSOFT_TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 
 export interface OutlookEvent {
-  id: string;
+  id?: string;
   subject: string;
   body?: {
     content: string;
@@ -26,6 +26,7 @@ export interface OutlookEvent {
       name: string;
     };
   }>;
+  lastModifiedDateTime?: string;
 }
 
 export interface OutlookCalendar {
@@ -40,7 +41,10 @@ export class OutlookClient {
     this.accessToken = accessToken;
   }
 
-  private async request(endpoint: string, options?: RequestInit): Promise<any> {
+  private async request<T = Record<string, unknown>>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<T> {
     const response = await fetch(`${GRAPH_API_BASE}${endpoint}`, {
       ...options,
       headers: {
@@ -54,12 +58,16 @@ export class OutlookClient {
       throw new Error(`Microsoft Graph API error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    return (await response.json()) as T;
   }
 
   async getCalendars(): Promise<OutlookCalendar[]> {
-    const data = await this.request('/me/calendars');
+    const data = await this.request<{ value?: OutlookCalendar[] }>('/me/calendars');
     return data.value || [];
+  }
+
+  async getEvent(eventId: string): Promise<OutlookEvent> {
+    return this.request<OutlookEvent>(`/me/events/${eventId}`);
   }
 
   async getEvents(calendarId: string = 'primary', startDate?: Date, endDate?: Date): Promise<OutlookEvent[]> {
@@ -78,12 +86,12 @@ export class OutlookClient {
       url += `?${params.toString()}`;
     }
 
-    const data = await this.request(url);
+    const data = await this.request<{ value?: OutlookEvent[] }>(url);
     return data.value || [];
   }
 
   async createEvent(calendarId: string, event: OutlookEvent): Promise<OutlookEvent> {
-    const data = await this.request(`/me/calendars/${calendarId}/events`, {
+    const data = await this.request<OutlookEvent>(`/me/calendars/${calendarId}/events`, {
       method: 'POST',
       body: JSON.stringify(event),
     });
@@ -91,7 +99,7 @@ export class OutlookClient {
   }
 
   async updateEvent(calendarId: string, eventId: string, event: OutlookEvent): Promise<OutlookEvent> {
-    const data = await this.request(`/me/calendars/${calendarId}/events/${eventId}`, {
+    const data = await this.request<OutlookEvent>(`/me/calendars/${calendarId}/events/${eventId}`, {
       method: 'PATCH',
       body: JSON.stringify(event),
     });
@@ -99,7 +107,7 @@ export class OutlookClient {
   }
 
   async deleteEvent(calendarId: string, eventId: string): Promise<void> {
-    await this.request(`/me/calendars/${calendarId}/events/${eventId}`, {
+    await this.request<unknown>(`/me/calendars/${calendarId}/events/${eventId}`, {
       method: 'DELETE',
     });
   }
