@@ -42,7 +42,15 @@ function SignupForm() {
       // Session is set via httpOnly cookie; only display data is cached.
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('selectedPlan', data.plan || selectedPlan);
-      router.replace('/onboarding');
+
+      // A "Buy" visitor wants to pay, not to configure calendars first, so send
+      // them straight to checkout instead of the onboarding wizard.
+      const wantsToBuy = searchParams.get('intent') === 'buy';
+      router.replace(
+        wantsToBuy
+          ? `/dashboard?intent=buy&plan=${data.plan || selectedPlan}`
+          : '/onboarding'
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');

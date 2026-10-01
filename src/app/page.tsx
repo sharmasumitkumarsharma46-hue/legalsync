@@ -292,7 +292,7 @@ export default function Home() {
 
           <div ref={pricingRef} onScroll={handlePricingScroll} className="mt-6 flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:none] md:mt-10 md:grid md:grid-cols-3 md:gap-5 md:items-stretch md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
             {pricingPlans.map((plan) => (
-              <article key={plan.key} className="flex min-h-[660px] min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-h-[690px] md:min-w-0 md:flex-1 md:p-5">
+              <article key={plan.key} className="flex min-h-[720px] min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-h-[750px] md:min-w-0 md:flex-1 md:p-5">
                 <div className="md:flex-1">
                   <h3 className="text-lg font-semibold">{plan.name}</h3>
                   <p className="mt-5 text-3xl font-semibold tracking-tight">{plan.price}<span className="text-sm font-normal text-[#4b5b47]"> / month</span></p>
@@ -308,9 +308,15 @@ export default function Home() {
                   </ul>
                 </div>
 
-                <Link href={`/signup?plan=${plan.key}`} className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[#2e8b57] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(46,139,87,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#267548] hover:shadow-[0_12px_24px_rgba(46,139,87,0.3)]">
-                  Start free trial
-                </Link>
+                <div className="mt-6 space-y-2.5">
+                  <Link href={`/signup?plan=${plan.key}`} className="inline-flex w-full items-center justify-center rounded-full bg-[#2e8b57] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(46,139,87,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#267548] hover:shadow-[0_12px_24px_rgba(46,139,87,0.3)]">
+                    Start free trial
+                  </Link>
+                  <Link href={`/signup?plan=${plan.key}&intent=buy`} className="inline-flex w-full items-center justify-center rounded-full border border-[#1f2a1d]/25 bg-white/80 px-5 py-3 text-sm font-semibold text-[#1f2a1d] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_10px_22px_rgba(31,42,29,0.12)]">
+                    Buy {plan.name}
+                  </Link>
+                  <p className="text-center text-xs text-[#687464]">14-day trial included with every plan</p>
+                </div>
               </article>
             ))}
           </div>

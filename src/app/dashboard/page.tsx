@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, fetchCurrentUser, signOut, type CurrentUser } from '@/lib/auth/client';
 import { hasFeatureAccess, PLAN_DEFINITIONS, type PlanKey } from '@/lib/billing/plans';
 
@@ -131,8 +131,9 @@ const PRIMARY_BUTTON =
   'inline-flex items-center justify-center rounded-xl bg-[#10233f] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#1a385e] focus:outline-none focus:ring-4 focus:ring-[#b7c8dc] disabled:cursor-not-allowed disabled:opacity-50';
 const SECONDARY_BUTTON =
   'inline-flex items-center justify-center rounded-xl border border-[#d8e1ec] bg-white px-4 py-3 text-sm font-bold text-[#10233f] transition hover:bg-[#f4f8ff] focus:outline-none focus:ring-4 focus:ring-[#d8f5ef] disabled:cursor-not-allowed disabled:opacity-50';
-export default function Dashboard() {
+function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [booting, setBooting] = useState(true);
@@ -258,8 +259,19 @@ export default function Dashboard() {
     connectedDestinations.forEach((provider) => {
       void loadCalendars(provider);
     });
-}, [connectedDestinations, loadCalendars]);
-const connectProvider = async (provider: Provider) => {
+  }, [connectedDestinations, loadCalendars]);
+
+  // Someone who clicked "Buy" on the pricing page arrives with intent=buy, so
+  // open the checkout dialog straight away instead of waiting for a click.
+  const buyIntent = searchParams.get('intent') === 'buy';
+
+  useEffect(() => {
+    if (buyIntent) {
+      setShowUpgrade(true);
+    }
+  }, [buyIntent]);
+
+  const connectProvider = async (provider: Provider) => {
     setConnecting(provider);
     try {
       const data = await apiFetch<{ authUrl: string }>(`/api/integrations/${provider}/connect`, {
@@ -1200,6 +1212,26 @@ if (booting) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<DashboardShell />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+/** Matching loading state so the Suspense boundary does not flash a blank page. */
+function DashboardShell() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f7fb]">
+      <div
+        className="h-12 w-12 animate-spin rounded-full border-b-2 border-[#159b89]"
+        role="status"
+        aria-label="Loading dashboard"
+      />
     </div>
   );
 }
