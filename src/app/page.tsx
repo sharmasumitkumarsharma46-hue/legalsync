@@ -312,7 +312,7 @@ export default function Home() {
 
           <div ref={pricingRef} onScroll={handlePricingScroll} className="mt-6 flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:none] md:mt-10 md:grid md:grid-cols-3 md:gap-5 md:items-stretch md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
             {pricingPlans.map((plan) => (
-              <article key={plan.key} className="flex min-h-[720px] min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-h-[750px] md:min-w-0 md:flex-1 md:p-5">
+              <article key={plan.key} className="flex min-h-[600px] min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-h-[620px] md:min-w-0 md:flex-1 md:p-5">
                 <div className="md:flex-1">
                   <h3 className="text-lg font-semibold">{plan.name}</h3>
                   <p className="mt-5 text-3xl font-semibold tracking-tight">{plan.price}<span className="text-sm font-normal text-[#4b5b47]"> / month</span></p>
