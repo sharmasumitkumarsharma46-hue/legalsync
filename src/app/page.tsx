@@ -24,9 +24,14 @@ const legalLinks = [
   { href: '/third-party-embeds', label: 'Third-Party Embeds' },
 ];
 
+/** Features shown before the "Show all features" toggle is expanded. */
+const FEATURE_PREVIEW_COUNT = 6;
+
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activePlanIndex, setActivePlanIndex] = useState(0);
+  // Mobile cards are tall; let people reveal the full feature list on demand.
+  const [expandedFeatures, setExpandedFeatures] = useState<Record<string, boolean>>({});
   const pricingRef = useRef<HTMLDivElement | null>(null);
   const allPaidPlanFeatures = [
     'Clio sync',
@@ -310,39 +315,8 @@ export default function Home() {
             </button>
           </div>
 
-          <div ref={pricingRef} onScroll={handlePricingScroll} className="mt-6 flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:none] md:mt-10 md:grid md:grid-cols-3 md:gap-5 md:items-stretch md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
-            {pricingPlans.map((plan) => (
-              <article key={plan.key} className="flex min-h-[600px] min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-h-[620px] md:min-w-0 md:flex-1 md:p-5">
-                <div className="md:flex-1">
-                  <h3 className="text-lg font-semibold">{plan.name}</h3>
-                  <p className="mt-5 text-3xl font-semibold tracking-tight">{plan.price}<span className="text-sm font-normal text-[#4b5b47]"> / month</span></p>
-                  <p className="mt-2 text-sm text-[#4b5b47]">{plan.detail}, with Clio and calendar sync.</p>
-                  <p className="mt-4 min-h-[58px] text-sm leading-relaxed text-[#4b5b47]">{plan.difference}</p>
-                  <ul className="mt-5 space-y-1.5 text-[13px] leading-relaxed text-[#4b5b47] md:text-sm">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#336443]" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-6 space-y-2.5">
-                  <Link href={`/signup?plan=${plan.key}`} className="inline-flex w-full items-center justify-center rounded-full bg-[#2e8b57] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(46,139,87,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#267548] hover:shadow-[0_12px_24px_rgba(46,139,87,0.3)]">
-                    Start free trial
-                  </Link>
-                  <Link href={`/signup?plan=${plan.key}&intent=buy`} className="inline-flex w-full items-center justify-center rounded-full border border-[#1f2a1d]/25 bg-white/80 px-5 py-3 text-sm font-semibold text-[#1f2a1d] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_10px_22px_rgba(31,42,29,0.12)]">
-                    Buy {plan.name}
-                  </Link>
-                  <p className="text-center text-xs text-[#687464]">14-day trial included with every plan</p>
-                </div>
-              </article>
-            ))}
-          </div>
-
           <div
-            className="mt-6 flex flex-wrap items-center justify-center gap-2"
+            className="mt-6 flex flex-wrap items-center justify-center gap-2 md:mt-8"
             role="tablist"
             aria-label="Choose a plan"
           >
@@ -369,6 +343,55 @@ export default function Home() {
                     {plan.price}
                   </span>
                 </button>
+              );
+            })}
+          </div>
+
+          <div ref={pricingRef} onScroll={handlePricingScroll} className="mt-5 flex snap-x gap-4 overflow-x-auto pb-3 [scrollbar-width:none] md:mt-6 md:grid md:grid-cols-3 md:gap-5 md:items-stretch md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
+            {pricingPlans.map((plan) => {
+              const isExpanded = expandedFeatures[plan.key] ?? false;
+              const visibleFeatures = isExpanded
+                ? plan.features
+                : plan.features.slice(0, FEATURE_PREVIEW_COUNT);
+
+              return (
+              <article key={plan.key} className="flex min-w-[84%] snap-center flex-col justify-between rounded-2xl border border-[#1f2a1d]/15 bg-white/70 p-4 shadow-[0_8px_24px_rgba(31,42,29,0.04)] md:min-w-0 md:flex-1 md:p-5">
+                <div className="md:flex-1">
+                  <h3 className="text-lg font-semibold">{plan.name}</h3>
+                  <p className="mt-3 text-3xl font-semibold tracking-tight">{plan.price}<span className="text-sm font-normal text-[#4b5b47]"> / month</span></p>
+                  <p className="mt-2 text-sm text-[#4b5b47]">{plan.detail}, with Clio and calendar sync.</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[#4b5b47]">{plan.difference}</p>
+                  <ul className="mt-3 grid grid-cols-1 gap-y-1.5 text-[13px] leading-snug text-[#4b5b47] md:grid-cols-2 md:gap-x-4">
+                    {visibleFeatures.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#336443]" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {plan.features.length > FEATURE_PREVIEW_COUNT && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedFeatures((prev) => ({ ...prev, [plan.key]: !isExpanded }))}
+                      className="mt-2 self-start text-xs font-semibold text-[#336443] underline underline-offset-4 hover:text-[#267548]"
+                    >
+                      {isExpanded
+                        ? 'Show fewer features'
+                        : `Show all ${plan.features.length} features`}
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-row justify-center gap-2">
+                  <Link href={`/signup?plan=${plan.key}`} className="inline-flex min-w-0 flex-1 items-center justify-center rounded-full bg-[#2e8b57] px-2 py-3 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(46,139,87,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#267548] hover:shadow-[0_12px_24px_rgba(46,139,87,0.3)] sm:px-4 sm:text-sm">
+                    Start free trial
+                  </Link>
+                  <Link href={`/signup?plan=${plan.key}&intent=buy`} className="inline-flex min-w-0 flex-1 items-center justify-center rounded-full border border-[#1f2a1d]/25 bg-white/80 px-2 py-3 text-xs font-semibold text-[#1f2a1d] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_10px_22px_rgba(31,42,29,0.12)] sm:px-4 sm:text-sm">
+                    Buy {plan.name}
+                  </Link>
+                </div>
+                <p className="mt-2 text-center text-xs text-[#687464]">14-day trial included with every plan</p>
+              </article>
               );
             })}
           </div>
