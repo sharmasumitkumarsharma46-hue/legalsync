@@ -21,6 +21,11 @@ export interface ProviderConfig {
   label: string;
   /** Providers that can act as a sync destination for calendar events. */
   supportsEventSync: boolean;
+  /**
+   * Environment variable holding this provider's webhook secret. Declared
+   * explicitly so it can never drift from the key in `env.example.txt`.
+   */
+  webhookSecretEnv: string;
   getAuthUrl(redirectUri: string, state: string): string;
   exchangeCode(code: string, redirectUri: string): Promise<TokenResponse>;
   listCalendars(accessToken: string): Promise<ProviderCalendar[]>;
@@ -58,6 +63,7 @@ export const PROVIDERS: Record<ProviderKey, ProviderConfig> = {
     integrationType: 'clio',
     label: 'Clio',
     supportsEventSync: false,
+    webhookSecretEnv: 'CLIO_WEBHOOK_SECRET',
     getAuthUrl: getClioAuthUrl,
     exchangeCode: exchangeClioCode,
     listCalendars: listClioCalendars,
@@ -66,6 +72,7 @@ export const PROVIDERS: Record<ProviderKey, ProviderConfig> = {
     integrationType: 'google_calendar',
     label: 'Google Calendar',
     supportsEventSync: true,
+    webhookSecretEnv: 'GOOGLE_WEBHOOK_SECRET',
     getAuthUrl: getGoogleAuthUrl,
     exchangeCode: exchangeGoogleCode,
     listCalendars: listGoogleCalendars,
@@ -74,6 +81,7 @@ export const PROVIDERS: Record<ProviderKey, ProviderConfig> = {
     integrationType: 'outlook',
     label: 'Outlook',
     supportsEventSync: true,
+    webhookSecretEnv: 'OUTLOOK_WEBHOOK_SECRET',
     getAuthUrl: getMicrosoftAuthUrl,
     exchangeCode: exchangeMicrosoftCode,
     listCalendars: listOutlookCalendars,

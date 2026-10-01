@@ -57,10 +57,14 @@ export async function POST(
   }
 
   const rawBody = await request.text();
-  const webhookSecret = process.env[`${provider.toUpperCase()}_WEBHOOK_SECRET`];
+  const config = PROVIDERS[provider];
+  const webhookSecret = process.env[config.webhookSecretEnv];
 
   if (!webhookSecret) {
-    logger.error('Provider webhook rejected: secret is not configured', { provider });
+    logger.error('Provider webhook rejected: secret is not configured', {
+      provider,
+      envVar: config.webhookSecretEnv,
+    });
     return NextResponse.json({ error: 'Webhook is not configured' }, { status: 503 });
   }
 

@@ -83,7 +83,7 @@ sensitive.
 | --- | --- |
 | `CLIO_WEBHOOK_SECRET` | Clio webhook settings. **If unset, Clio webhooks return 503** |
 | `GOOGLE_WEBHOOK_SECRET` | Value you send as the push channel token |
-| `MICROSOFT_WEBHOOK_SECRET` | Shared secret for Graph notifications |
+| `OUTLOOK_WEBHOOK_SECRET` | Shared secret for Microsoft Graph notifications. Note the `OUTLOOK_` prefix, not `MICROSOFT_`, because that is the provider key |
 | `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` | Stripe dashboard |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook endpoint. **If unset, payments return 503** |
 | `COINBASE_API_KEY` / `COINBASE_WEBHOOK_SECRET` | Coinbase Commerce, only for crypto |
